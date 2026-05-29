@@ -58,7 +58,6 @@ The processed dataset (`al6011_downsampled_full.xlsx`) is included in this repos
 
 ```
 ├── hot-tensil-pgnn-comprehensive.ipynb   # Full pipeline: training + analysis + physical insight
-├── hot-tensil-pgnn-v6.ipynb              # Core PGNN training pipeline
 ├── analysis_percondition_physics.py      # Standalone per-condition analysis script
 ├── al6011_downsampled_full.xlsx          # Processed dataset (1,982 samples)
 ├── al6011_data_summary.xlsx              # Data summary statistics

@@ -6,6 +6,7 @@ tensile_data_with_strain(true data).xlsx
 hot_tensil_pgnn_v4.ipynb
 hot_tensil_pgnn_v5.ipynb
 hot-tensil-pgnn-v5.ipynb
+hot-tensil-pgnn-v6.ipynb
 Code/hot-tensil-pgnn-v3.ipynb
 
 # Wrong metrics from sandbox test run (correct ones in Futher_analysis_results/)
