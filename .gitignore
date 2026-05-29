@@ -1,0 +1,29 @@
+# Large raw data files
+tensile_data.xlsx
+tensile_data_with_strain(true data).xlsx
+
+# Old notebook versions
+hot_tensil_pgnn_v4.ipynb
+hot_tensil_pgnn_v5.ipynb
+hot-tensil-pgnn-v5.ipynb
+Code/hot-tensil-pgnn-v3.ipynb
+
+# Wrong metrics from sandbox test run (correct ones in Futher_analysis_results/)
+model_comparison_summary.csv
+per_condition_metrics.csv
+
+# Root-level figures (duplicates of Futher_analysis_results/)
+fig_*.png
+
+# Helper scripts (integrated into comprehensive notebook)
+pgnn_extra_cells.py
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
