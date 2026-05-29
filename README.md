@@ -85,6 +85,11 @@ The processed dataset (`al6011_downsampled_full.xlsx`) is included in this repos
 - NumPy, Pandas, Matplotlib, Seaborn
 - scikit-learn
 
+## Authors
+
+- **Nguyen Tran Quang Minh**
+- **Tran Ngoc Dung** — Dalian University of Technology (DUT), China
+
 ## Citation
 
 If you use this code, please cite our work (paper in preparation).
