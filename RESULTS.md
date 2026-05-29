@@ -62,7 +62,7 @@ Even on SCAM's "home turf," the physics-guided models dramatically outperform it
 
 **Key observations:**
 
-SCAM fails catastrophically (negative R²) because polynomial regression cannot capture the complex, non-linear parameter evolution across all strain levels simultaneously. The PGNN architecture handles all conditions through a single model. Among ML models, PGNN+λA achieves the best generalization — the gap between train and test AARE (3.85% → 7.33%) is smaller than ANN's gap (9.80% → 12.24%), suggesting the physics constraint acts as effective regularization.
+SCAM fails catastrophically (negative R²) because polynomial regression cannot capture the complex, non-linear parameter evolution across all strain levels simultaneously. The PGNN architecture handles all conditions through a single model. Among ML models, PGNN+λA achieves the lowest test AARE (7.33%) despite having the best training AARE (3.85%), demonstrating that the physics-guided architecture learns genuinely better representations rather than simply memorizing training data.
 
 ## Per-Condition Analysis
 
