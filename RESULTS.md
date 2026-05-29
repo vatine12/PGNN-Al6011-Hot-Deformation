@@ -47,9 +47,22 @@ We also tested two other λ-balancing strategies (adaptive ratio and gradient-no
 | PGNN | 0.944 | 13.06 | 8.28 |
 | **PGNN+λA** | **0.947** | **12.64** | **7.33** |
 
+### Thermally Activated Range (250–450°C) — Fair Comparison with SCAM
+
+Since SCAM was fit on the 250–450°C range only (excluding RT and 150°C due to DSA anomaly), a fair comparison uses the same 15 conditions:
+
+| Model | Avg AARE (%) |
+|-------|-------------|
+| SCAM | 54.04 |
+| ANN | 9.51 |
+| PGNN | 5.33 |
+| **PGNN+λA** | **4.44** |
+
+Even on SCAM's "home turf," the physics-guided models dramatically outperform it. The PGNN+λA achieves 4.44% AARE — a 12× improvement over SCAM.
+
 **Key observations:**
 
-SCAM fails catastrophically (negative R²) because it was fit on only 15 conditions (excluding RT and 150°C due to DSA anomaly), yet is evaluated on all 21. The PGNN architecture, by contrast, handles all conditions through a single model. Among ML models, PGNN+λA achieves the best generalization — the gap between train and test AARE (3.85% → 7.33%) is smaller than ANN's gap (9.80% → 12.24%), suggesting the physics constraint acts as effective regularization.
+SCAM fails catastrophically (negative R²) because polynomial regression cannot capture the complex, non-linear parameter evolution across all strain levels simultaneously. The PGNN architecture handles all conditions through a single model. Among ML models, PGNN+λA achieves the best generalization — the gap between train and test AARE (3.85% → 7.33%) is smaller than ANN's gap (9.80% → 12.24%), suggesting the physics constraint acts as effective regularization.
 
 ## Per-Condition Analysis
 

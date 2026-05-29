@@ -52,7 +52,7 @@ For detailed results and analysis, see [RESULTS.md](RESULTS.md).
 
 ## Authors
 
-- **Nguyen Tran Quang Minh**
+- **Nguyen Tran Quang Minh** — Keio University, Japan
 - **Tran Ngoc Dung** — Dalian University of Technology (DUT), China
 
 ## Citation
