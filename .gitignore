@@ -18,6 +18,7 @@ fig_*.png
 
 # Helper scripts (integrated into comprehensive notebook)
 pgnn_extra_cells.py
+analysis_percondition_physics.py
 
 # Internal knowledge base (context transfer between sessions)
 knowledge_base_v7.md
