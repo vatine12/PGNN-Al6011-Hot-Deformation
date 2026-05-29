@@ -62,7 +62,6 @@ The processed dataset (`al6011_downsampled_full.xlsx`) is included in this repos
 ├── analysis_percondition_physics.py      # Standalone per-condition analysis script
 ├── al6011_downsampled_full.xlsx          # Processed dataset (1,982 samples)
 ├── al6011_data_summary.xlsx              # Data summary statistics
-├── knowledge_base_v7.md                  # Detailed project documentation
 ├── Code/
 │   ├── hot-tensile-ann.ipynb             # ANN baseline notebook
 │   └── hot-tensile-scam.ipynb            # SCAM baseline notebook
@@ -93,7 +92,3 @@ The processed dataset (`al6011_downsampled_full.xlsx`) is included in this repos
 ## Citation
 
 If you use this code, please cite our work (paper in preparation).
-
-## License
-
-MIT
