@@ -19,45 +19,13 @@ Input (temperature, strain rate, strain)
 
 The key constraint: each parameter is bounded to a physically realistic range using sigmoid activation, so the network can't "cheat" by learning nonsensical values.
 
-## Key Results
-
-**Prediction accuracy (test set):**
-
-| Model | R² | RMSE (MPa) | AARE (%) |
-|-------|-----|-----------|----------|
-| Traditional (SCAM) | — | 69.0 | 54.0 |
-| Black-box ANN | 0.939 | 13.6 | 12.2 |
-| **PGNN+λA (ours)** | **0.947** | **12.6** | **7.3** |
-
-**Physical insight — the model rediscovers known physics without being told:**
-- Activation energy Q ≈ 179 kJ/mol (literature for Al 6xxx: 130–180 kJ/mol)
-- Stress exponent n ≈ 5.5–8, decreasing with temperature (consistent with dislocation climb)
-- Q–ln(A) compensation effect (r = −0.81), a well-documented phenomenon in hot deformation
-
-This means the architecture is not just fitting curves — it is learning real material behavior.
-
-## Material & Dataset
-
-- **Alloy:** Al 6011-O aluminum
-- **Test conditions:** 7 temperatures (RT–450°C) × 3 strain rates (0.001–0.1 s⁻¹) = 21 conditions
-- **Data points:** 1,982 (downsampled from raw tensile tests at Δε = 0.005)
-- **Split:** 70% train / 15% validation / 15% test, stratified by condition
-
-The processed dataset (`al6011_downsampled_full.xlsx`) is included in this repository.
-
-## Models Compared
-
-| Model | What it is |
-|-------|-----------|
-| SCAM | Traditional Strain-Compensated Arrhenius Model (polynomial regression) |
-| ANN | Standard neural network — predicts stress directly, no physics |
-| PGNN | Physics-guided neural network — learns Arrhenius parameters, data loss only |
-| PGNN+λA | PGNN with an additional physics-regularization loss (best model) |
+For detailed results and analysis, see [RESULTS.md](RESULTS.md).
 
 ## Repository Structure
 
 ```
 ├── hot-tensil-pgnn-comprehensive.ipynb   # Full pipeline: training + analysis + physical insight
+├── RESULTS.md                            # Detailed results and physical insight analysis
 ├── al6011_downsampled_full.xlsx          # Processed dataset (1,982 samples)
 ├── al6011_data_summary.xlsx              # Data summary statistics
 ├── Code/
