@@ -9,12 +9,10 @@ hot-tensil-pgnn-v5.ipynb
 hot-tensil-pgnn-v6.ipynb
 Code/hot-tensil-pgnn-v3.ipynb
 
-# Wrong metrics from sandbox test run (correct ones in Futher_analysis_results/)
-model_comparison_summary.csv
-per_condition_metrics.csv
-
-# Root-level figures (duplicates of Futher_analysis_results/)
-fig_*.png
+# Root-level duplicates (correct ones live in Futher_analysis_results/)
+/model_comparison_summary.csv
+/per_condition_metrics.csv
+/fig_*.png
 
 # Helper scripts (integrated into comprehensive notebook)
 pgnn_extra_cells.py
