@@ -1,6 +1,6 @@
-# PGNN-Al6011-Hot-Deformation
+# Hybrid PGNN — Regime-Gated Physics/Data Networks for Al 6011-O Hot-Deformation Flow Stress
 
-Physics-guided and hybrid physics/data neural networks for predicting the hot-deformation flow stress of **Al 6011-O** aluminium, with an honest focus on **generalization to unseen deformation conditions**.
+A learned gate blends an **Arrhenius physics expert** with a **data expert** to predict the hot-deformation flow stress of **Al 6011-O** aluminium — matching the physics model where the constitutive law holds, a data-driven model where it breaks (dynamic strain aging), and recovering the **physics-validity boundary** from data. Evaluated with honest **leave-one-condition-out / leave-one-temperature-out** extrapolation.
 
 ## TL;DR
 
