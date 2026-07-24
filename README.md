@@ -5,7 +5,6 @@ Physics-guided and hybrid physics/data neural networks for predicting the hot-de
 ## TL;DR
 
 - A **physics-guided neural network (PGNN)** that outputs Arrhenius parameters (α, n, Q, lnA) and computes stress through the sinh-Arrhenius law is accurate *and* physically interpretable (learned activation energy Q ≈ 180 kJ/mol, matching literature).
-- We show that once the physics is embedded in the *architecture*, **adding physics-based loss terms is largely redundant** — the sinh-Arrhenius form already guarantees the monotonic behaviour those losses try to enforce.
 - Pure PGNN is excellent in the **hot-working regime (250–450 °C)** but **structurally fails at RT/150 °C**, where dynamic strain aging (DSA) makes stress *decrease* with strain rate — behaviour the Arrhenius form cannot represent.
 - Our fix is a **regime-gated physics/data hybrid**: `σ = g·σ_physics + (1−g)·σ_data`, where a learned gate `g` decides where to trust the physics. It matches the physics model where the law holds, matches a black-box network where it breaks, and the **gate recovers the Arrhenius-validity boundary directly from data**.
 - Everything is evaluated with **leave-one-condition-out / leave-one-temperature-out** cross-validation (honest extrapolation) plus multi-seed paired statistics — not the optimistic random split.
@@ -62,8 +61,8 @@ The story: **PGNN wins in the hot regime and fails at DSA; the ANN is the opposi
 
 ## What we learned
 
-1. **Where you put the physics matters.** Embedding Arrhenius in the architecture drives the main gain (ANN → PGNN). Adding SCAM-matching / consistency / smoothness / monotonicity *losses* is largely redundant — the architecture already enforces that physics (monotonicity is in fact structurally guaranteed by the sinh-Arrhenius form).
-2. **A rigid physics model has a hard limit.** Pure PGNN cannot represent DSA (negative strain-rate sensitivity) at RT/150 °C. No loss term can fix this; only a more flexible architecture can.
+1. **Physics in the architecture is what matters.** Embedding the Arrhenius law directly in the network (ANN → PGNN) drives the accuracy and interpretability — the model is constrained to physically meaningful parameters instead of fitting stress directly.
+2. **A rigid physics model has a hard limit.** Pure PGNN cannot represent DSA (negative strain-rate sensitivity) at RT/150 °C — the sinh-Arrhenius form structurally forbids it.
 3. **A regime-gated hybrid is the fix**, and its gate is an interpretable, data-driven map of *where the constitutive law is valid*.
 
 ## Repository structure
@@ -74,15 +73,11 @@ The story: **PGNN wins in the hot regime and fails at DSA; the ANN is the opposi
 ├── PROJECT_KNOWLEDGE_BASE.md                  # compact context for continuation
 ├── al6011_downsampled_full.xlsx               # dataset (21 conditions, 1,982 pts)
 ├── al6011_data_summary.xlsx                   # summary statistics
-├── hot-tensil-pgnn-physics-pipeline.ipynb     # LOCO/LOTO/ablation harness (physics losses)
-├── hot-tensil-pgnn-stepB-mono.ipynb           # baseline vs monotonicity, multi-seed
-├── hot-tensil-pgnn-stepB2-mono-masked.ipynb   # masked mono + per-condition table
-├── Code/
-│   ├── hot-tensil-pgnn-v15-gated-hybrid-result.ipynb    # gated hybrid (main result)
-│   ├── hot-tensil-pgnn-v16-twosided-gate-result.ipynb   # two-sided gate prior (best)
-│   └── hot-tensil-pgnn-v12-masked-mono-result.ipynb     # physics-loss redundancy study
-├── results/                                   # LOCO/LOTO/random/per-condition CSVs
-└── Futher_analysis_results/                   # earlier figures & metrics
+└── Code/
+    ├── hot-tensil-pgnn-v15-gated-hybrid-result.ipynb    # PGNN, ANN, gated hybrid, gate prior (main)
+    ├── hot-tensil-pgnn-v16-twosided-gate-result.ipynb   # two-sided gate prior (best model)
+    ├── hot-tensile-ann.ipynb                            # ANN baseline
+    └── hot-tensile-scam.ipynb                           # SCAM (classical Arrhenius) fit & reference
 ```
 
 ## How to run
@@ -106,7 +101,7 @@ The complete, self-contained pipelines are the two notebooks in `Code/`:
 - `hot-tensil-pgnn-v15-gated-hybrid-result.ipynb` — PGNN, ANN, gated hybrid, and one-sided gate prior.
 - `hot-tensil-pgnn-v16-twosided-gate-result.ipynb` — the two-sided gate prior (best model).
 
-Each defines the config, models (`HybridPGNN`, `FreeNet`, `GatedHybrid`), training engine, LOCO/LOTO/random splits, and evaluation on its own. The other notebooks are earlier exploratory studies (physics-loss ablations) and are supplementary.
+Each defines the config, models (`HybridPGNN`, `FreeNet`, `GatedHybrid`), training engine, LOCO/LOTO/random splits, and evaluation on its own. `Code/hot-tensile-ann.ipynb` and `Code/hot-tensile-scam.ipynb` document the ANN baseline and the classical SCAM (Arrhenius) fit used as the physics reference.
 
 **Reproduction order:** run **v15 first** — it trains the four base models (`pgnn`, `ann`, `hybrid`, `hybrid+gp`) and saves the LOCO/LOTO/per-condition CSVs. Then run **v16** in the same environment — it trains `hybrid+gp2` (two-sided gate prior) and merges with v15's CSVs to build the combined comparison table. Each notebook trains and saves its own models independently, so both are needed for the full table.
 

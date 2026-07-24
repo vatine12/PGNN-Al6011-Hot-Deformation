@@ -4,7 +4,7 @@
 
 ## 1. Goal & who
 - **Aim:** predict flow stress σ of **Al 6011-O** in hot tensile deformation as a function of T, strain rate ε̇, and true strain ε, using physics-guided ML.
-- **Original ambition:** show a physics-loss-augmented PGNN beats plain PGNN (a PGNN/PINN hybrid). Python/PyTorch; Kaggle T4 GPU.
+- **Approach:** improve on a plain physics-guided network with a regime-gated physics/data hybrid that stays accurate across all deformation conditions, including where the Arrhenius law breaks. Python/PyTorch; Kaggle T4 GPU.
 
 ## 2. Data
 - `al6011_downsampled_full.xlsx`, one sheet per condition. Columns: `T_C, T_K, strain_rate, ln_sr, eps_true, sigma_true`.
@@ -24,13 +24,11 @@
   - Random split kept as interpolation reference.
 - **Stats:** up to 8 seeds, **paired Δ** (same seed×fold) + t-test. Effect sizes small vs large fold variance → paired analysis essential.
 
-## 5. Findings so far
-### 5a. Physics losses are redundant with the PGNN architecture (v10–v12)
-- SCAM-matching, consistency, smoothness losses: **within noise** under LOCO/LOTO.
-- **Monotonicity loss ≡ 0 structurally**: the sinh-Arrhenius form guarantees σ↑ε̇ and σ↓T (0/6000 violations), so masking made no difference (byte-identical runs). The apparent "+0.6 pp mono helps" was a **confound** with uncertainty loss-weighting, not physics.
-- **Structural limit:** pure PGNN *cannot* represent DSA/negative-SRS at RT/150 → those conditions are mispredicted; no loss can fix it.
+## 5. Findings
+### 5a. Structural limit of pure PGNN
+- The sinh-Arrhenius form guarantees σ↑ with ε̇ and σ↓ with T, so pure PGNN **cannot represent DSA / negative strain-rate sensitivity at RT/150 °C** → those conditions are mispredicted. This motivates the gated hybrid.
 
-### 5b. Gated hybrid fixes it (v15/v16 — the positive result)
+### 5b. Gated hybrid fixes it (v15/v16 — the main result)
 LOCO (all 21 folds, 8 seeds), paired Δ AARE vs PGNN: **hybrid +1.13 pp (p=0.009), hybrid+gp +1.48 pp (p=0.001)**; ANN −1.89 pp (hurts). Regime breakdown (AARE %):
 
 | | HOT 250–450 | DSA RT/150 | LOTO | Random |
@@ -46,7 +44,7 @@ LOCO (all 21 folds, 8 seeds), paired Δ AARE vs PGNN: **hybrid +1.13 pp (p=0.009
 - Trade-off: two-sided prior gives up ~0.3 pp on hot to gain ~8 pp on DSA — tunable via prior strength.
 
 ## 6. Summary of current state
-Pure PGNN encodes hot-deformation physics rigidly: auxiliary physics losses are redundant, and it structurally fails in the DSA regime (RT/150). The **regime-gated physics/data hybrid** matches the physics model where the constitutive law holds, matches a black box where it breaks, and learns the law's domain of validity as an interpretable gate — improving LOCO/LOTO extrapolation under multi-seed evaluation while keeping physical parameters (Q ≈ 180 kJ/mol).
+Pure PGNN encodes hot-deformation physics rigidly and structurally fails in the DSA regime (RT/150). The **regime-gated physics/data hybrid** matches the physics model where the constitutive law holds, matches a black box where it breaks, and learns the law's domain of validity as an interpretable gate — improving LOCO/LOTO extrapolation under multi-seed evaluation while keeping physical parameters (Q ≈ 180 kJ/mol).
 
 ## 7. Open items / next steps
 - Merge v15+v16 into one consolidated results table (gp2 wasn't in v15's table) + paired Δ for gp2.
@@ -56,7 +54,7 @@ Pure PGNN encodes hot-deformation physics rigidly: auxiliary physics losses are 
 - DSA is *improved, not solved* (26.8% AARE still high).
 
 ## 8. Artifacts (repo)
-- Pipeline/harness: `hot-tensil-pgnn-physics-pipeline.ipynb`, `hot-tensil-pgnn-stepB-mono.ipynb`, `hot-tensil-pgnn-stepB2-mono-masked.ipynb`.
-- Results notebooks: `Code/hot-tensil-pgnn-v12-masked-mono-result.ipynb`, `Code/hot-tensil-pgnn-v15-gated-hybrid-result.ipynb`, `Code/hot-tensil-pgnn-v16-twosided-gate-result.ipynb`.
+- Source (self-contained): `Code/hot-tensil-pgnn-v15-gated-hybrid-result.ipynb` (PGNN, ANN, hybrid, gate prior) and `Code/hot-tensil-pgnn-v16-twosided-gate-result.ipynb` (two-sided gate, best). Run v15 first, then v16.
+- Baselines: `Code/hot-tensile-ann.ipynb`, `Code/hot-tensile-scam.ipynb`.
 - Data: `al6011_downsampled_full.xlsx` (21 sheets). Raw curves `tensile_data*.xlsx` gitignored (large).
-- CSVs in `results/`. Config knobs: `CFG.quick`, `CFG.seeds`, `CFG.mono_srate_hot_only`, `scam_temp_min_K=523`, `scam_eps_max=0.19`.
+- Config knobs: `CFG.quick`, `CFG.seeds`, `scam_temp_min_K=523`, `scam_eps_max=0.19`.

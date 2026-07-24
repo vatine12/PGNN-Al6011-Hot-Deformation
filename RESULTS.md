@@ -1,9 +1,9 @@
 # Results & Analysis
 
-> This document reflects the current, cross-validated results. Earlier versions reported a
-> "PGNN + physics-loss (λA) is best" story based on a random train/test split; that split leaks
-> information within stress–strain curves (interpolation), and the conclusion did not survive honest
-> extrapolation testing. See "Evaluation" and "Corrected findings" below.
+> This document reports cross-validated results under honest extrapolation testing. Note that a random
+> train/test split leaks information within each stress–strain curve (interpolation) and inflates the
+> metrics; all headline numbers below use leave-one-condition-out / leave-one-temperature-out instead.
+> See "Evaluation" below.
 
 ## Material & dataset
 
@@ -19,7 +19,6 @@
 | SCAM | classical equation | Strain-compensated sinh-Arrhenius; parameters as polynomials in ε; fit on hot conditions only, valid ε ∈ [0.05, 0.19]. Reference / validator, not ground truth. |
 | ANN | none (black box) | MLP (T, ln ε̇, ε) → σ. |
 | PGNN | **architecture** | MLP → (α, n, Q, lnA) sigmoid-bounded → sinh-Arrhenius → σ. |
-| PGNN + physics loss | architecture + **loss** | SCAM-matching (λA/λB/λC schedules), consistency, smoothness, monotonicity terms. |
 | Gated hybrid | architecture + **gating** | σ = g·σ_PGNN + (1−g)·σ_FreeNN, learned gate g. |
 | Hybrid + two-sided gate prior | + validity prior | gate pushed → 1 (hot) and → 0 (DSA). **Best overall.** |
 
@@ -32,14 +31,6 @@ The original random 70/15/15 split shuffles points *within* each curve, so a tes
 - **Random split** — kept only as an interpolation reference.
 
 Up to **8 seeds**; comparisons are **paired** (same seed × fold) with t-tests, since fold-to-fold variance is large.
-
-## Corrected findings — physics losses are redundant with the architecture
-
-Under LOCO/LOTO with multi-seed paired statistics:
-
-- SCAM-matching, consistency, and smoothness losses are **within noise** relative to plain PGNN.
-- The **monotonicity loss is identically zero** for this architecture: the sinh-Arrhenius form structurally guarantees σ↑ with ε̇ and σ↓ with T (0 violations in 6,000 random tests). Masking it changed nothing (byte-identical runs). An apparent gain from the "mono" configuration traced to an adaptive **loss-weighting** scheme, not the physics term.
-- **Conclusion:** embedding Arrhenius in the architecture (ANN → PGNN) is the real source of improvement; loss-based physics adds little because the architecture already enforces it.
 
 ## Structural limitation of pure PGNN
 
