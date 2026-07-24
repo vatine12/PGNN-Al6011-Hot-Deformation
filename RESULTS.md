@@ -1,130 +1,98 @@
 # Results & Analysis
 
-## Material & Dataset
+> This document reflects the current, cross-validated results. Earlier versions reported a
+> "PGNN + physics-loss (λA) is best" story based on a random train/test split; that split leaks
+> information within stress–strain curves (interpolation), and the conclusion did not survive honest
+> extrapolation testing. See "Evaluation" and "Corrected findings" below.
 
-- **Alloy:** Al 6011-O aluminum
-- **Test conditions:** 7 temperatures (RT–450°C) × 3 strain rates (0.001–0.1 s⁻¹) = 21 conditions
-- **Data points:** 1,982 (downsampled from raw tensile tests at Δε = 0.005)
-- **Split:** 70% train / 15% validation / 15% test, stratified by condition
+## Material & dataset
 
-## Models Compared
+- **Alloy:** Al 6011-O aluminium.
+- **Conditions:** 7 temperatures (25, 150, 250, 300, 350, 400, 450 °C) × 3 strain rates (0.001, 0.01, 0.1 s⁻¹) = **21 conditions**.
+- **Points:** 1,982 (downsampled from raw tensile curves, Δε ≈ 0.005). Each condition is a smooth σ–ε curve; true strain reaches ~0.7 at high T.
+- **Two physical regimes:** hot working (250–450 °C, thermally activated / DRX) and **RT/150 °C dynamic strain aging (DSA)**. In the DSA regime, stress *decreases* with strain rate (negative strain-rate sensitivity) — verified directly in the data (0% strain-rate-monotone at RT/150 vs 100% at 250–450 °C).
 
-| Model | Description |
-|-------|------------|
-| SCAM | Traditional Strain-Compensated Arrhenius Model — 6th-order polynomial regression for each parameter at each strain level |
-| ANN | Black-box neural network [3→128→128→64→1] — predicts stress directly, no physics embedded |
-| PGNN | Physics-guided neural network — learns Arrhenius parameters (α, n, Q, lnA) through sigmoid-bounded heads, data loss only |
-| PGNN+λA | PGNN with additional physics-regularization loss using warmup + grid-search λ balancing (best model) |
+## Models
 
-We also tested two other λ-balancing strategies (adaptive ratio and gradient-norm), but neither improved over the base PGNN, so we focus on λA.
+| Model | Physics injected via | Notes |
+|---|---|---|
+| SCAM | classical equation | Strain-compensated sinh-Arrhenius; parameters as polynomials in ε; fit on hot conditions only, valid ε ∈ [0.05, 0.19]. Reference / validator, not ground truth. |
+| ANN | none (black box) | MLP (T, ln ε̇, ε) → σ. |
+| PGNN | **architecture** | MLP → (α, n, Q, lnA) sigmoid-bounded → sinh-Arrhenius → σ. |
+| PGNN + physics loss | architecture + **loss** | SCAM-matching (λA/λB/λC schedules), consistency, smoothness, monotonicity terms. |
+| Gated hybrid | architecture + **gating** | σ = g·σ_PGNN + (1−g)·σ_FreeNN, learned gate g. |
+| Hybrid + two-sided gate prior | + validity prior | gate pushed → 1 (hot) and → 0 (DSA). **Best overall.** |
 
-## Overall Performance
+## Evaluation (why the metric changed)
 
-### Training Set
+The original random 70/15/15 split shuffles points *within* each curve, so a test point at ε = 0.105 lies between training points at 0.10 and 0.11 on the *same* curve, temperature and rate. That measures interpolation and inflates R² to ~0.98. Honest protocols used here:
 
-| Model | R² | RMSE (MPa) | AARE (%) |
-|-------|-----|-----------|----------|
-| SCAM | -4.68 | 72.41 | 60.64 |
-| ANN | 0.981 | 8.01 | 9.80 |
-| PGNN | 0.992 | 5.00 | 4.53 |
-| **PGNN+λA** | **0.994** | **4.37** | **3.85** |
+- **LOCO** — leave-one-condition-out: hold out one whole (T, ε̇) curve, train on the other 20, predict it. Repeated for all 21 conditions.
+- **LOTO** — leave-one-temperature-out: hold out all rates at one temperature. Hardest (must extrapolate across temperature).
+- **Random split** — kept only as an interpolation reference.
 
-### Validation Set
+Up to **8 seeds**; comparisons are **paired** (same seed × fold) with t-tests, since fold-to-fold variance is large.
 
-| Model | R² | RMSE (MPa) | AARE (%) |
-|-------|-----|-----------|----------|
-| SCAM | -3.00 | 60.41 | 55.47 |
-| ANN | 0.954 | 12.37 | 9.70 |
-| PGNN | 0.959 | 11.70 | 5.34 |
-| **PGNN+λA** | **0.960** | **11.52** | **4.72** |
+## Corrected findings — physics losses are redundant with the architecture
 
-### Test Set
+Under LOCO/LOTO with multi-seed paired statistics:
 
-| Model | R² | RMSE (MPa) | AARE (%) |
-|-------|-----|-----------|----------|
-| SCAM | -4.19 | 69.00 | 53.99 |
-| ANN | 0.939 | 13.64 | 12.24 |
-| PGNN | 0.944 | 13.06 | 8.28 |
-| **PGNN+λA** | **0.947** | **12.64** | **7.33** |
+- SCAM-matching, consistency, and smoothness losses are **within noise** relative to plain PGNN.
+- The **monotonicity loss is identically zero** for this architecture: the sinh-Arrhenius form structurally guarantees σ↑ with ε̇ and σ↓ with T (0 violations in 6,000 random tests). Masking it changed nothing (byte-identical runs). An apparent gain from the "mono" configuration traced to an adaptive **loss-weighting** scheme, not the physics term.
+- **Conclusion:** embedding Arrhenius in the architecture (ANN → PGNN) is the real source of improvement; loss-based physics adds little because the architecture already enforces it.
 
-### Thermally Activated Range (250–450°C) — Fair Comparison with SCAM
+## Structural limitation of pure PGNN
 
-Since SCAM was fit on the 250–450°C range only (excluding RT and 150°C due to DSA anomaly), a fair comparison uses the same 15 conditions:
+The sinh-Arrhenius form is mathematically forced to make σ increase with strain rate, at every temperature. It therefore **cannot represent DSA / negative strain-rate sensitivity at RT/150 °C**, and mispredicts those conditions. No loss term (masked or not) can fix this — the rigidity is in the equation, not the penalty.
 
-| Model | Avg AARE (%) |
-|-------|-------------|
-| SCAM | 54.04 |
-| ANN | 9.51 |
-| PGNN | 5.33 |
-| **PGNN+λA** | **4.44** |
+## Gated hybrid — the fix (main result)
 
-Even on SCAM's "home turf," the physics-guided models dramatically outperform it. The PGNN+λA achieves 4.44% AARE — a 12× improvement over SCAM.
+**LOCO (all 21 conditions held out, 8 seeds), paired Δ AARE vs pure PGNN:**
 
-**Key observations:**
+| Config | Δ AARE (pp, + = better) | p-value | Verdict |
+|---|---|---|---|
+| ANN | −1.89 | 0.023 | hurts |
+| Gated hybrid | **+1.13** | 0.009 | helps |
+| Hybrid + gate prior | **+1.48** | 0.001 | helps |
 
-SCAM fails catastrophically (negative R²) because polynomial regression cannot capture the complex, non-linear parameter evolution across all strain levels simultaneously. The PGNN architecture handles all conditions through a single model. Among ML models, PGNN+λA achieves the lowest test AARE (7.33%) despite having the best training AARE (3.85%), demonstrating that the physics-guided architecture learns genuinely better representations rather than simply memorizing training data.
+**Error by regime (AARE %):**
 
-## Per-Condition Analysis
+| Model | Hot 250–450 °C | DSA RT/150 °C | LOTO | Random |
+|---|---|---|---|---|
+| PGNN | **12.18** | 35.08 | 32.09 | 7.15 |
+| ANN | 18.13 | 26.81 | 32.84 | 11.20 |
+| Hybrid + gate prior (v15) | 11.97 | 30.41 | 28.06 | 7.35 |
+| **Hybrid + two-sided prior (v16)** | 12.46 | **26.77** | **24.43** | **6.85** |
 
-Per-condition metrics (R², RMSE, AARE for every temperature × strain rate combination) are available in [`Futher_analysis_results/per_condition_metrics.csv`](Futher_analysis_results/per_condition_metrics.csv).
+Interpretation: **PGNN dominates the hot regime and fails at DSA; ANN is the opposite; the gated hybrid gets both.** The two-sided hybrid reaches the black box's DSA accuracy (26.8 ≈ 26.8) while nearly matching PGNN on hot (12.5 vs 12.2), and it is best on both the hardest extrapolation (LOTO) and interpolation. The two-sided prior trades ~0.3 pp of hot accuracy for ~8 pp of DSA accuracy — a tunable operating point.
 
-### Heatmap — Per-Condition Performance
+## The gate recovers the validity boundary
 
-![Per-condition heatmap](Futher_analysis_results/fig_percondition_heatmap.png)
+Mean learned gate (physics weight) per condition, two-sided prior:
 
-The heatmap shows R², RMSE, and AARE for each of the 21 conditions across ANN, PGNN, and PGNN+λA. PGNN+λA is most consistent across conditions, with fewer "hot spots" of high error.
+| Regime | Gate g (physics weight) |
+|---|---|
+| RT (25 °C) | ≈ 0.11 |
+| 150 °C | ≈ 0.25 |
+| 250 °C | ≈ 0.66 |
+| 350 °C | ≈ 0.92 |
+| 450 °C | ≈ 0.98 |
 
-### Bar Chart — Worst-to-Best Conditions
+The model **learns where the constitutive law is valid** — low physics weight in the DSA regime, near-full physics weight in the hot regime — recovering the DSA ↔ Arrhenius transition from data alone. This gate map is the signature figure of the study.
 
-![Per-condition bar chart](Futher_analysis_results/fig_percondition_bar.png)
+## Physical interpretability
 
-Conditions ranked by AARE from worst to best. The hardest conditions for all models tend to be the room temperature and 150°C cases (DSA anomaly region), but PGNN+λA handles them notably better than the pure ANN.
+The physics expert's learned Arrhenius parameters remain physical inside the SCAM-valid window (T ≥ 250 °C, ε ∈ [0.05, 0.19]):
 
-## Physical Insight Analysis
+| Parameter | Learned | Classical SCAM | Literature anchor |
+|---|---|---|---|
+| Q (kJ/mol) | ~180 | ~157 | 150–185 (Al self-diffusion ≈ 142) |
+| n | ~5.8 | ~5.6 | — |
+| α (1/MPa) | ~0.025 | ~0.019 | — |
 
-The core contribution of this work: the PGNN learns physically meaningful parameters without being explicitly taught their values. We can extract and analyze these learned parameters to verify they match known materials science.
+## Open items
 
-### Learned Parameters vs SCAM Polynomials
-
-![Learned params vs SCAM](Futher_analysis_results/fig_learned_params_vs_scam.png)
-
-The four Arrhenius parameters (α, n, Q, lnA) learned by the PGNN are compared against the SCAM polynomial fits. The PGNN discovers similar trends but with more flexibility — it is not constrained to follow a 6th-order polynomial, allowing it to capture non-smooth transitions.
-
-### Parameter Evolution with Temperature
-
-![Parameter evolution](Futher_analysis_results/fig_param_evolution_T.png)
-
-Box-plots of each parameter grouped by temperature reveal physically consistent trends:
-
-- **Stress exponent n** decreases with increasing temperature — consistent with a transition from dislocation glide to dislocation climb as the dominant deformation mechanism
-- **Activation energy Q** remains relatively stable around 179 kJ/mol, within the expected range for Al 6xxx alloys (130–180 kJ/mol in literature)
-- **α** stays within the typical range for aluminum alloys (0.01–0.03 MPa⁻¹)
-
-### Activation Energy Analysis
-
-![Activation energy](Futher_analysis_results/fig_activation_energy.png)
-
-The learned activation energy Q ≈ 179 kJ/mol is consistent with thermally activated dislocation motion in Al 6xxx alloys. The Q distribution is tight, indicating the model has confidently converged on a physically meaningful value rather than scattering across the allowed range.
-
-### Parameter Correlation Matrix
-
-![Correlation matrix](Futher_analysis_results/fig_correlation_matrix.png)
-
-A strong anti-correlation between Q and lnA (r = −0.81) emerges naturally — this is the well-known **compensation effect** in hot deformation, where higher activation energy is offset by a higher frequency factor. The model discovers this relationship without any explicit constraint, validating that the architecture is learning real physics.
-
-## Uncertainty Quantification
-
-Using MC Dropout (100 forward passes with dropout enabled at inference), the best model achieves:
-
-- **PICP** (Prediction Interval Coverage Probability): 93.4% — close to the 95% target, meaning the model's confidence intervals capture most true values
-- **MPIW** (Mean Prediction Interval Width): 12.13 MPa — reasonably tight intervals
-
-## Summary
-
-The PGNN+λA model achieves three goals simultaneously:
-
-1. **Accuracy** — R² = 0.947, AARE = 7.33% on the test set, outperforming both traditional SCAM and black-box ANN
-2. **Interpretability** — learned parameters match known physical properties of Al 6xxx alloys (Q ≈ 179 kJ/mol, n ≈ 5.5–8, compensation effect)
-3. **Generalization** — physics constraints reduce overfitting, with smaller train-test performance gaps than the unconstrained ANN
-
-The key methodological contribution is that the network discovers known physics without supervision, validating that the architecture is genuinely learning material behavior rather than just fitting curves.
+- Merge the v15 and v16 runs into one consolidated table (paired Δ for the two-sided hybrid too).
+- Capacity-fair control: report parameter counts and confirm the hybrid dominates *both* parent models across regimes, not just from extra capacity.
+- Tune gate-prior strength to minimise the small hot-regime cost.
+- DSA is **improved, not solved** — 26.8 % AARE at RT/150 °C is still high.
